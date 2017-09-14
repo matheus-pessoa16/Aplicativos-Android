@@ -16,6 +16,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.webkit.WebView;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -28,14 +29,35 @@ import java.util.Random;
 
 import static android.content.ContentValues.TAG;
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements View.OnClickListener{
+
+    public enum Sensor {
+        LDR(0), NTC(1), MOTOR(2);
+
+        private final int indice;
+
+        Sensor(int i) {
+            indice = i;
+        }
+
+        public int getIndice() {
+            return indice;
+        }
+    }
 
 
-    private static final Random RANDOM = new Random();
+    static Sensor SENSOR = Sensor.LDR;
+
     static TextView statusMessage;
-    static TextView counterMessage;
+   // static TextView counterMessage;
+
+    private ImageView ldrBtn;
+    private ImageView ntcBtn;
+    private ImageView motorBtn;
+
+
     ConnectionThread connect;
-    WebView wvGrafico;
+
     static String dados;
     GraphView graph;
     LineGraphSeries<DataPoint> series;
@@ -47,10 +69,17 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         statusMessage = (TextView) findViewById(R.id.statusMessage);
-
         //counterMessage = (TextView) findViewById(R.id.counterMessage);
         graph = (GraphView) findViewById(R.id.graph);
 
+
+        ldrBtn = (ImageView) findViewById(R.id.ldrBtn);
+        ntcBtn = (ImageView) findViewById(R.id.ntcBtn);
+        motorBtn = (ImageView) findViewById(R.id.motorBtn);
+
+        ldrBtn.setOnClickListener(this);
+        ntcBtn.setOnClickListener(this);
+        motorBtn.setOnClickListener(this);
 
         BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
         if (btAdapter == null) {
@@ -63,6 +92,7 @@ public class MainActivity extends Activity {
 
         connect = new ConnectionThread("00:15:83:35:5A:23");
         connect.start();
+
 
         try {
             Thread.sleep(1000);
@@ -86,6 +116,28 @@ public class MainActivity extends Activity {
         viewport.setScalable(true);
         viewport.setScalableY(true);
 
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()){
+            case R.id.motorBtn:
+                SENSOR = Sensor.MOTOR;
+                graph.setTitle("MOTOR");
+
+                break;
+
+            case R.id.ntcBtn:
+                SENSOR = Sensor.NTC;
+                graph.setTitle("NTC");
+                break;
+
+            default:
+                SENSOR = Sensor.LDR;
+                graph.setTitle("LDR");
+
+                break;
+        }
     }
 
 
@@ -119,6 +171,11 @@ public class MainActivity extends Activity {
         }
     };
 
+    // capturar o botão que foi pressionado
+    // enviar para o arduino um comando para mandar dados de outra variável (mudar sensor)
+    // atualizar a string global de dados
+    // resetar o gráfico para exibir a nova string
+
     public void restartCounter(View view) {
         connect.write("Trocar\n".getBytes());
     }
@@ -127,7 +184,7 @@ public class MainActivity extends Activity {
     private void addEntry() {
         // here, we choose to display max 10 points on the viewport and we scroll to end
         DataPoint[] values = new DataPoint[30];
-
+        String valor;
         if (dados != null)
 
         {
@@ -136,8 +193,8 @@ public class MainActivity extends Activity {
 //                values[i] = v;
 //            }
 
-
-            series.appendData(new DataPoint(lastX++, Double.parseDouble(dados)), true, 40);
+            valor = dados.split(";")[SENSOR.getIndice()];
+            series.appendData(new DataPoint(lastX++, Double.parseDouble(valor)), true, 40);
 
 
 
@@ -178,6 +235,7 @@ public class MainActivity extends Activity {
             }
         }).start();
     }
+
 
 }
 

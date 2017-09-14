@@ -105,11 +105,12 @@ public class ConnectionThread extends Thread{
 
                 while(running){
 
-                    byte [] buffer = new byte[32];
+                    byte [] buffer = new byte[128];
                     int bytes;
                     int bytesRead = -1;
 
                     do{
+
                         bytes = input.read(buffer, bytesRead+1, 1);
                         bytesRead += bytes;
                     }while(buffer[bytesRead] != '\n');
